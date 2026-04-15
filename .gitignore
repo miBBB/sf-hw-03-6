@@ -1,0 +1,14 @@
+.ansible/
+*.retry
+*.swp
+.vscode/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+*.log
+setup_ssh.yml
