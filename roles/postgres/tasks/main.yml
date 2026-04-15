@@ -1,0 +1,8 @@
+---
+- name: Install Postrges - Ubuntu
+  import_tasks: ubuntu.yml
+  when: inventory_hostname in groups['ubuntu']
+
+#- name: Install Postgres - CentOS
+#  import_tasks: centos.yml
+#  when: inventory_hostname in groups['centos']

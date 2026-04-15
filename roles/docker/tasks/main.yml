@@ -1,0 +1,7 @@
+- name: Install Docker in Ubuntu
+  import_tasks: ubuntu.yml
+  when: inventory_hostname in groups['ubuntu']
+
+- name: Install Docker in CentOS
+  import_tasks: centos.yml
+  when: inventory_hostname in groups['centos']

@@ -1,0 +1,43 @@
+- name: Update apt cache - Ubuntu
+  ansible.builtin.apt:
+    update_cache: true
+
+- name: Ensure postgres group exists - Ubuntu
+  ansible.builtin.group:
+    name: postgres
+    state: present
+
+- name: Ensure postgres user exists - Ubuntu
+  ansible.builtin.user:
+    name: postgres
+    group: postgres
+    state: present
+    system: yes
+
+- name: Install Postgres packages - Ubuntu
+  ansible.builtin.apt:
+    name: "postgresql-{{ pg_version }}"
+    state: present
+    update_cache: yes
+
+- name: Create Postgres needs data dir - Ubuntu
+  ansible.builtin.file:
+    path: "{{ pg_data_dir }}"
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: '0700'
+#  when: pg_data_dir != '/var/lib/postgresql/{{ pg_version }}/main'
+  when: pg_data_dir != '/var/lib/postgresql/' ~ pg_version ~ '/main'
+
+- name: Init claster with new Postgres data dir - Ubuntu
+  ansible.builtin.command: "pg_createcluster {{ pg_version }} main -d {{ pg_data_dir }}"
+  args:
+    creates: "{{ pg_data_dir }}/{{ pg_version }}"
+  ignore_errors: yes
+
+- name: Run Postgres - Ubuntu
+  ansible.builtin.service:
+    name: "postgresql"
+    state: started
+    enabled: yes

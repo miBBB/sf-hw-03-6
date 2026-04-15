@@ -1,0 +1,30 @@
+[all]
+  vm1 ansible_host=192.168.0.108
+  vm2 ansible_host=192.168.0.109
+  vm3 ansible_host=192.168.0.105
+
+
+[all:vars]
+  ansible_user=ansible
+  ansible_ssh_private_key_file=/home/ansible/.ssh/id_rsa
+
+[app]
+  vm2
+  vm3
+
+[databases]
+  vm1
+
+[databases:vars]
+  pg_version=16
+  pg_data_dir=/var/lib/postgresql/{{ pg_version }}/data
+
+[web]
+  vm1
+
+[ubuntu]
+  vm1
+  vm2
+
+[centos]
+  vm3
