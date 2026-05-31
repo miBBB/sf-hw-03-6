@@ -1,0 +1,243 @@
+- name: Install Docker
+  hosts: app
+  become: yes
+  gather_facts: yes
+  tags: docker
+
+  tasks:
+    - name: Remove old version - Ubuntu
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose
+          - docker-compose-v2
+          - docker-doc
+          - podman-docker
+          - containerd
+          - runc
+        state: absent
+      ignore_errors: True
+      when: "'ubuntu' in group_names"
+      tags: 
+        - docker
+
+    - name: Update apt packages cache - Ubuntu
+      ansible.builtin.apt:
+        update_cache: yes
+      when: "'ubuntu' in group_names"
+      tags: 
+        - docker
+
+    - name: Upgrade packeges - Ubuntu
+      ansible.builtin.apt:
+        upgrade: dist
+        autoremove: yes
+      when: "'ubuntu' in group_names"
+      tags: 
+        - docker
+
+    - name: Install dependency - Ubuntu
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+        state: present
+      when: "'ubuntu' in group_names"
+      tags: 
+        - docker
+
+    - name: Add gpg key - Ubuntu
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+      when: "'ubuntu' in group_names"
+      tags: 
+        - docker
+
+    - name: add repository - Ubuntu
+      ansible.builtin.copy:
+        dest: "/etc/apt/sources.list.d/docker.sources"
+        content: |
+          Types: deb
+          URIs: https://download.docker.com/linux/ubuntu
+          Suites: {{ ansible_distribution_release }}
+          Components: stable
+          Signed-By: /etc/apt/keyrings/docker.asc
+      when: "'ubuntu' in group_names"
+      tags: 
+        - docker
+
+    - name: Install docker - Ubuntu
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+      when: "'ubuntu' in group_names"
+      tags: 
+        - docker
+
+    - name: Add group docker - Ubuntu
+      ansible.builtin.group:
+        name: docker
+        state: present
+      when: "'ubuntu' in group_names"
+      tags: 
+        - docker
+
+    - name: Add user to group docker - Ubuntu
+      ansible.builtin.user:
+        name: test
+        groups: docker
+        append: true
+      when: "'ubuntu' in group_names"
+      tags: 
+        - docker
+
+    - name: Start docker daemon - Ubuntu
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: yes
+      when: "'ubuntu' in group_names"
+      tags: 
+        - docker
+    
+    - name: Install required packages - CentOS
+      ansible.builtin.yum:
+        name:
+          - yum-utils
+          - device-mapper-persistent-data
+          - lvm2
+        state: latest
+        update_cache: true
+      when: "'centos' in group_names"
+      tags: 
+        - centos_docker
+
+    #- name: Add Docker gpg key - CentOS
+    #  ansible.builtin.rpm_key:
+    #    state: present
+    #    key: https://download.docker.com
+
+    - name: Add docker repository - CentOS
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/centos/docker-ce.repo
+        dest: /etc/yum.repos.d/docker-ce.repo
+        mode: '0644'
+      when: "'centos' in group_names"
+      tags: 
+        - docker
+
+    - name: Install docker - CentOS
+      ansible.builtin.yum:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: latest
+      when: "'centos' in group_names"
+      tags: 
+        - docker
+
+    - name: Add group docker - CentOS
+      ansible.builtin.group:
+        name: docker
+        state: present
+      when: "'centos' in group_names"
+      tags: 
+        - docker
+
+    - name: Add user to group docker - CentOS
+      ansible.builtin.user:
+        name: test
+        groups: docker
+        append: true
+      when: "'centos' in group_names"
+      tags: 
+        - docker
+
+    - name: Run docker - CentOS
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+      when: "'centos' in group_names"
+      tags: 
+        - docker
+
+- name: Install Postgres
+  hosts: databases
+  become: yes
+  gather_facts: no
+  tags:
+    - postgres
+  tasks:
+    - name: Update apt cache - Ubuntu
+      ansible.builtin.apt:
+        update_cache: true
+      when: "'ubuntu' in group_names"
+      tags: 
+        - postgres
+      
+    - name: Ensure postgres group exists - Ubuntu
+      ansible.builtin.group:
+        name: postgres
+        state: present
+      when: "'ubuntu' in group_names"
+      tags: 
+        - postgres
+
+    - name: Ensure postgres user exists - Ubuntu
+      ansible.builtin.user:
+        name: postgres
+        group: postgres
+        state: present
+        system: yes
+      when: "'ubuntu' in group_names"
+      tags: 
+        - postgres
+
+    - name: Install Postgres packages - Ubuntu
+      ansible.builtin.apt:
+        name: "postgresql-{{ pg_version }}"
+        state: present
+        update_cache: yes
+      when: "'ubuntu' in group_names"
+      tags: 
+        - postgres
+
+    - name: Create Postgres needs data dir - Ubuntu
+      ansible.builtin.file:
+        path: "{{ pg_data_dir }}"
+        state: directory
+        owner: postgres
+        group: postgres
+        mode: '0700'
+      when: 
+        - pg_data_dir != '/var/lib/postgresql/' ~ pg_version ~ '/main'
+        - "'ubuntu' in group_names"
+      tags: 
+        - postgres
+
+    - name: Init claster with new Postgres data dir - Ubuntu
+      ansible.builtin.command: "pg_createcluster {{ pg_version }} main -d {{ pg_data_dir }}"
+      args:
+        creates: "{{ pg_data_dir }}/{{ pg_version }}"
+      ignore_errors: yes
+      when: "'ubuntu' in group_names"
+      tags: 
+        - postgres
+
+    - name: Run Postgres - Ubuntu
+      ansible.builtin.service:
+        name: "postgresql"
+        state: started
+        enabled: yes
+      when: "'ubuntu' in group_names"
+      tags: 
+        - postgres
