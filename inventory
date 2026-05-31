@@ -1,8 +1,7 @@
 [all]
-  vm1 ansible_host=192.168.0.108
-  vm2 ansible_host=192.168.0.109
-  vm3 ansible_host=192.168.0.105
-
+  vm1 ansible_host=192.168.1.101
+  vm2 ansible_host=192.168.1.166
+  vm3 ansible_host=192.168.1.117
 
 [all:vars]
   ansible_user=ansible
